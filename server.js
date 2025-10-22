@@ -1,7 +1,10 @@
-import express, { response } from "express"; 
+import express from "express";
 
-const app = express(); 
-const port = 2025; 
+const app = express();
+const port = 2025;
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 const tvCharacters = [
     {
@@ -66,39 +69,73 @@ const tvCharacters = [
 ];
 
 function getAllCharacters() {
-    return tvCharacters; 
-};
-
-function getCharacterById(characterId){
-    const id = parseInt(characterId); 
-    const character = tvCharacters.find((character)=> character.id === id); 
-    return character; 
+    return tvCharacters;
 }
 
-app.get( "/api/characters/:id", (request, response) => {
-    const character = getCharacterById(request.params.id); 
+function getCharacterById(characterId) {
+    const id = parseInt(characterId);
+    const character = tvCharacters.find((character) => character.id === id);
 
-    if(!character){
-        return response.status(404).json({
-            data: "Character does not exist with that id."
-        });
-    }
-    
-    response.status(200).json({
-        data: character, 
-    });
+    return character;
+}
 
-});
-
-app.get( "/api/characters", (request, response) => {
-    const characters = getAllCharacters(); 
+app.get("/api/characters", (request, response) => {
+    const characters = getAllCharacters();
     response.status(200).json({
         data: characters,
     });
+});
 
-}); 
+app.get("/api/characters/:id", (request, response) => {
+    const character = getCharacterById(request.params.id);
 
-app.listen(port, ()=>{
-    console.log(`Server is runnning on http://localhost:${port}`);
-    console.log("Press Ctrl+C to end this process.")
-})
+    if (!character) {
+        return response.status(404).json({
+            data: "Character does not exist with that id",
+        });
+    }
+
+    response.status(200).json({
+        data: character,
+    });
+});
+
+function createCharacter(requestBody) {
+    const newCharacter = {
+        id: tvCharacters.length + 1,
+        name: requestBody.name,
+        show: requestBody.show,
+    };
+
+    if (!newCharacter.name || !newCharacter.show) {
+        return undefined;
+    }
+
+    tvCharacters.push(newCharacter)
+    return newCharacter;
+}
+
+app.post("/api/characters", (request, response) => {
+    if (!request.body) {
+        return response.status(400).json({
+            data: "Bad Request. Missing required information",
+        });
+    }
+
+    const newCharacter = createCharacter(request.body);
+
+    if (!newCharacter) {
+        return response.status(400).json({
+            data: "Bad Request. Missing required information",
+        });
+    }
+
+    response.status(201).json({
+        data: newCharacter,
+    });
+});
+
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+    console.log("Press Ctrl+C to end this process.");
+});
